@@ -18,8 +18,4 @@ public abstract class TileEntityTickingBase extends TileEntityLoadedBase {
 	//shit i don't know man
 	@Override
 	public abstract void updateEntity();
-
-	@Deprecated
-	public void handleButtonPacket(int value, int meta) { }
-
 }

@@ -1726,9 +1726,11 @@ public class ResourceManager {
 	// public static final ResourceLocation template_tex = new ResourceLocation(RefStrings.MODID, "textures/models/your/path/here/template.png");
 	public static final ResourceLocation  engraver_tex = new ResourceLocation(RefStrings.MODID, "textures/models/machines/engraver.png");
 	public static final ResourceLocation  dahaf_tex = new ResourceLocation(RefStrings.MODID, "textures/models/machines/deaeratorhaf.png");
+	public static final ResourceLocation  space_ripper_tex = new ResourceLocation(RefStrings.MODID, "textures/models/ripper/space_ripper.png");
 	//broken idk why kill me now
 	public static final IModelCustom engraver =  new HFRWavefrontObject(new ResourceLocation(RefStrings.MODID, "models/machines/engraver.obj")).asVBO();
 	public static final IModelCustom dahaf = new HFRWavefrontObject(new ResourceLocation(RefStrings.MODID, "models/machines/deaeratorhaf.obj")).asVBO();
+	public static final IModelCustom space_ripper = new HFRWavefrontObject(new ResourceLocation(RefStrings.MODID, "models/ripper/space_ripper.obj")).asVBO();
 
 
 }

@@ -10,6 +10,7 @@ import com.hbm.blocks.machine.*;
 import com.hbm.blocks.machine.albion.*;
 import com.hbm.blocks.machine.pile.*;
 import com.hbm.blocks.machine.rbmk.*;
+import com.hbm.blocks.machine.ripper.MachineSpaceRipper;
 import com.hbm.blocks.network.*;
 import com.hbm.blocks.rail.*;
 import com.hbm.blocks.test.*;
@@ -1398,6 +1399,7 @@ public class ModBlocks {
 	//NTM Hard Stuff
 	public static Block machine_laserboi;
 	public static Block deaerator;
+	public static Block space_ripper;
 
 
 	public static Material materialGas = new MaterialGas();
@@ -2704,7 +2706,7 @@ public class ModBlocks {
 		// NTM Hard Stuff
 		deaerator = new MachineDeaerator(Material.iron).setBlockName("deaerator").setHardness(1.8F).setCreativeTab(MainRegistry.machineTab).setBlockTextureName(RefStrings.MODID + ":condenser");
 		machine_laserboi = new MachineLaserBoi(Material.iron).setBlockName("machine_laserboi").setHardness(1.0F).setCreativeTab(MainRegistry.machineTab).setBlockTextureName(RefStrings.MODID + ":block_steel_machine");
-
+		space_ripper = new MachineSpaceRipper().setBlockName("space_ripper").setHardness(1.0F).setCreativeTab(MainRegistry.machineTab);
 
 
 	}
@@ -3991,6 +3993,7 @@ public class ModBlocks {
 		//NTM Hard Stuff
 		register(deaerator);
 		register(machine_laserboi);
+		register(space_ripper);
 
 	}
 

@@ -1,5 +1,6 @@
 package com.hbm.inventory.gui;
 
+import com.hbm.packet.toserver.NBTControlPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.resources.I18n;
@@ -15,7 +16,6 @@ import org.lwjgl.opengl.GL11;
 import com.hbm.inventory.container.ContainerMachineBattery;
 import com.hbm.lib.RefStrings;
 import com.hbm.packet.PacketDispatcher;
-import com.hbm.packet.toserver.AuxButtonPacket;
 import com.hbm.tileentity.machine.storage.TileEntityMachineBattery;
 import com.hbm.util.BobMathUtil;
 import com.hbm.util.i18n.I18nUtil;
@@ -49,20 +49,20 @@ public class GUIMachineBattery extends GuiInfoContainer {
 		String[] info = { BobMathUtil.getShortNumber(battery.power) + "/" + BobMathUtil.getShortNumber(battery.getMaxPower()) + "HE", deltaText };
 
 		this.drawCustomInfoStat(mouseX, mouseY, guiLeft + 62, guiTop + 69 - 52, 52, 52, mouseX, mouseY, info);
-		
+
 		String lang = null;
 		switch(battery.priority) {
 		case LOW: lang = "low"; break;
 		case NORMAL: lang = "normal"; break;
 		case HIGH: lang = "high"; break;
 		}
-		
+
 		List<String> priority = new ArrayList();
 		priority.add(I18nUtil.resolveKey("battery.priority." + lang));
 		priority.add(I18nUtil.resolveKey("battery.priority.recommended"));
 		String[] desc = I18nUtil.resolveKeyArray("battery.priority." + lang + ".desc");
 		for(String s : desc) priority.add(s);
-		
+
 		this.drawCustomInfoStat(mouseX, mouseY, guiLeft + 152, guiTop + 35, 16, 16, mouseX, mouseY, priority);
 	}
 
@@ -71,17 +71,23 @@ public class GUIMachineBattery extends GuiInfoContainer {
 
 		if(guiLeft + 133 <= x && guiLeft + 133 + 18 > x && guiTop + 16 < y && guiTop + 16 + 18 >= y) {
 			mc.getSoundHandler().playSound(PositionedSoundRecord.func_147674_a(new ResourceLocation("gui.button.press"), 1.0F));
-			PacketDispatcher.wrapper.sendToServer(new AuxButtonPacket(battery.xCoord, battery.yCoord, battery.zCoord, 0, 0));
+			PacketDispatcher.wrapper.sendToServer(new NBTControlPacket(battery.xCoord, battery.yCoord, battery.zCoord,nbt->{
+				nbt.setBoolean("redLow",true);
+			}));
 		}
 
 		if(guiLeft + 133 <= x && guiLeft + 133 + 18 > x && guiTop + 52 < y && guiTop + 52 + 18 >= y) {
 			mc.getSoundHandler().playSound(PositionedSoundRecord.func_147674_a(new ResourceLocation("gui.button.press"), 1.0F));
-			PacketDispatcher.wrapper.sendToServer(new AuxButtonPacket(battery.xCoord, battery.yCoord, battery.zCoord, 0, 1));
+			PacketDispatcher.wrapper.sendToServer(new NBTControlPacket(battery.xCoord, battery.yCoord, battery.zCoord,nbt->{
+				nbt.setBoolean("redHigh",true);
+			}));
 		}
 
 		if(guiLeft + 152 <= x && guiLeft + 152 + 16 > x && guiTop + 35 < y && guiTop + 35 + 16 >= y) {
 			mc.getSoundHandler().playSound(PositionedSoundRecord.func_147674_a(new ResourceLocation("gui.button.press"), 1.0F));
-			PacketDispatcher.wrapper.sendToServer(new AuxButtonPacket(battery.xCoord, battery.yCoord, battery.zCoord, 0, 2));
+			PacketDispatcher.wrapper.sendToServer(new NBTControlPacket(battery.xCoord, battery.yCoord, battery.zCoord,nbt->{
+				nbt.setBoolean("cyclePriority",true);
+			}));
 		}
 	}
 
@@ -110,7 +116,7 @@ public class GUIMachineBattery extends GuiInfoContainer {
 
 		int j = battery.redHigh;
 		drawTexturedModalRect(guiLeft + 133, guiTop + 52, 176, 52 + j * 18, 18, 18);
-		
+
 		drawTexturedModalRect(guiLeft + 152, guiTop + 35, 194, 52 + battery.priority.ordinal() * 16 - 16, 16, 16);
 	}
 }

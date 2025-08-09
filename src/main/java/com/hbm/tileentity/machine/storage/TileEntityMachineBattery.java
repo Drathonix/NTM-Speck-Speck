@@ -12,6 +12,7 @@ import api.hbm.tile.IInfoProviderEC;
 
 import com.hbm.blocks.machine.MachineBattery;
 import com.hbm.handler.CompatHandler;
+import com.hbm.interfaces.IControlReceiver;
 import com.hbm.inventory.container.ContainerMachineBattery;
 import com.hbm.inventory.gui.GUIMachineBattery;
 import com.hbm.lib.Library;
@@ -39,7 +40,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 @Optional.InterfaceList({@Optional.Interface(iface = "li.cil.oc.api.network.SimpleComponent", modid = "opencomputers")})
-public class TileEntityMachineBattery extends TileEntityMachineBase implements IEnergyConductorMK2, IEnergyProviderMK2, IEnergyReceiverMK2, IPersistentNBT, SimpleComponent, IGUIProvider, IInfoProviderEC, CompatHandler.OCComponent, IRORValueProvider, IRORInteractive {
+public class TileEntityMachineBattery extends TileEntityMachineBase implements IEnergyConductorMK2, IEnergyProviderMK2, IEnergyReceiverMK2, IPersistentNBT, SimpleComponent, IGUIProvider, IInfoProviderEC, CompatHandler.OCComponent, IRORValueProvider, IRORInteractive, IControlReceiver {
 
 	public long[] log = new long[20];
 	public long delta = 0;
@@ -129,7 +130,7 @@ public class TileEntityMachineBattery extends TileEntityMachineBase implements I
 		nbt.setShort("redHigh", redHigh);
 		nbt.setByte("lastRedstone", lastRedstone);
 		nbt.setByte("priority", (byte)this.priority.ordinal());
-		
+
 		if (customName != null) {
 			nbt.setString("name", customName);
 		}
@@ -174,11 +175,6 @@ public class TileEntityMachineBattery extends TileEntityMachineBase implements I
 	public void updateEntity() {
 
 		if(!worldObj.isRemote && worldObj.getBlock(xCoord, yCoord, zCoord) instanceof MachineBattery) {
-
-			if(priority == null || priority.ordinal() == 0 || priority.ordinal() == 4) {
-				priority = ConnectionPriority.LOW;
-			}
-
 			int mode = this.getRelevantMode(false);
 
 			long prevPower = this.power;
@@ -188,14 +184,8 @@ public class TileEntityMachineBattery extends TileEntityMachineBase implements I
 			// In buffer mode, becomes a cable block and provides power to itself
 			// otherwise, acts like a regular power providing/accepting machine
 			if(mode == mode_buffer) {
-				if(this.node == null || this.node.expired) {
-
-					this.node = (PowerNode) UniNodespace.getNode(worldObj, xCoord, yCoord, zCoord, Nodespace.THE_POWER_PROVIDER);
-
-					if(this.node == null || this.node.expired) {
-						this.node = this.createNode();
-						UniNodespace.createNode(worldObj, this.node);
-					}
+				if(UniNodespace.isUnstable(this.node)) {
+					this.node = (PowerNode) UniNodespace.getOrCreateNode(worldObj, xCoord, yCoord, zCoord, Nodespace.THE_POWER_PROVIDER,this::createNode);
 				}
 
 				this.tryProvide(worldObj, xCoord, yCoord, zCoord, ForgeDirection.UNKNOWN);
@@ -400,10 +390,10 @@ public class TileEntityMachineBattery extends TileEntityMachineBase implements I
 
 	@Override
 	public String runRORFunction(String name, String[] params) {
-		
+
 		if((PREFIX_FUNCTION + "setmode").equals(name) && params.length > 0) {
 			int mode = IRORInteractive.parseInt(params[0], 0, 3);
-			
+
 			if(mode != this.redLow) {
 				this.redLow = (short) mode;
 				this.markChanged();
@@ -416,10 +406,10 @@ public class TileEntityMachineBattery extends TileEntityMachineBase implements I
 			}
 			return null;
 		}
-		
+
 		if((PREFIX_FUNCTION + "setredmode").equals(name) && params.length > 0) {
 			int mode = IRORInteractive.parseInt(params[0], 0, 3);
-			
+
 			if(mode != this.redHigh) {
 				this.redHigh = (short) mode;
 				this.markChanged();
@@ -432,7 +422,7 @@ public class TileEntityMachineBattery extends TileEntityMachineBase implements I
 			}
 			return null;
 		}
-		
+
 		if((PREFIX_FUNCTION + "setpriority").equals(name) && params.length > 0) {
 			int priority = IRORInteractive.parseInt(params[0], 0, 2) + 1;
 			ConnectionPriority p = EnumUtil.grabEnumSafely(ConnectionPriority.class, priority);
@@ -441,5 +431,28 @@ public class TileEntityMachineBattery extends TileEntityMachineBase implements I
 			return null;
 		}
 		return null;
+	}
+
+	@Override
+	public boolean hasPermission(EntityPlayer player) {
+		return isUseableByPlayer(player);
+	}
+
+	@Override
+	public void receiveControl(NBTTagCompound data) {
+		if(data.hasKey("redLow")){
+			redLow = (short)((redLow+1)%4);
+		}
+		if(data.hasKey("redHigh")){
+			redHigh = (short)((redHigh+1)%4);
+		}
+		if(data.hasKey("cyclePriority")){
+			switch(priority) {
+				case LOW: priority = ConnectionPriority.NORMAL; break;
+				case NORMAL: priority = ConnectionPriority.HIGH; break;
+				case HIGH: priority = ConnectionPriority.LOW; break;
+			}
+		}
+		markDirty();
 	}
 }

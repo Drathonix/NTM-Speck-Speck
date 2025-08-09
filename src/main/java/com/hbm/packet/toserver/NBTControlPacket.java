@@ -1,6 +1,7 @@
 package com.hbm.packet.toserver;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import com.hbm.interfaces.IControlReceiver;
 
@@ -25,6 +26,21 @@ public class NBTControlPacket implements IMessage {
 
 	public NBTControlPacket(NBTTagCompound nbt, int x, int y, int z) {
 
+		this.buffer = new PacketBuffer(Unpooled.buffer());
+		this.x = x;
+		this.y = y;
+		this.z = z;
+
+		try {
+			buffer.writeNBTTagCompoundToBuffer(nbt);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public NBTControlPacket(int x, int y, int z, Consumer<NBTTagCompound> nbtFiller) {
+		NBTTagCompound nbt = new NBTTagCompound();
+		nbtFiller.accept(nbt);
 		this.buffer = new PacketBuffer(Unpooled.buffer());
 		this.x = x;
 		this.y = y;
