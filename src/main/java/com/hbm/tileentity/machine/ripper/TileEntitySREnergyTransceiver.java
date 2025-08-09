@@ -3,31 +3,37 @@ package com.hbm.tileentity.machine.ripper;
 import api.hbm.energymk2.IEnergyProviderMK2;
 import api.hbm.energymk2.IEnergyReceiverMK2;
 import api.hbm.energymk2.Nodespace;
-import com.hbm.blocks.machine.MachineBattery;
+import com.hbm.calc.Location;
+import com.hbm.interfaces.IControlReceiver;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.TileEntityLoadedBase;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.uninos.UniNodespace;
+import com.hbm.util.Tuple;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityRipperEnergyTransceiver extends TileEntityMachineBase implements IEnergyReceiverMK2, IEnergyProviderMK2 {
-	public static final long maxPower = 100_000_000;
-	public boolean isSending;
-	public PocketDimension linkedPocketDimension = null;
+import javax.annotation.Nullable;
+
+public class TileEntitySREnergyTransceiver extends TileEntitySRBase implements IEnergyReceiverMK2, IEnergyProviderMK2, IControlReceiver {
+	// Sending energy into the rift (so actually receiving energy from a power net)
+	public boolean isReceiving;
 	public ConnectionPriority priority = ConnectionPriority.LOW;
 
-	public TileEntityRipperEnergyTransceiver() {
+	public TileEntitySREnergyTransceiver() {
 		super(2);
 	}
 
 	@Override
 	public long getPower() {
-		return isSending ? linkedPocketDimension.getPowerLong() : 0;
+		return linkedPocketDimension == null ? 0 : (isReceiving ? 0 : linkedPocketDimension.getPowerLong());
 	}
 
 	@Override
 	public void usePower(long power) {
-		linkedPocketDimension.removeEnergy(power);
+		if(linkedPocketDimension != null) {
+			linkedPocketDimension.removeEnergy(power);
+		}
 	}
 
 	@Override
@@ -37,7 +43,9 @@ public class TileEntityRipperEnergyTransceiver extends TileEntityMachineBase imp
 
 	@Override
 	public long transferPower(long power) {
-		linkedPocketDimension.insertEnergy(power);
+		if(linkedPocketDimension != null) {
+			linkedPocketDimension.insertEnergy(power);
+		}
 		return 0;
 	}
 
@@ -53,64 +61,56 @@ public class TileEntityRipperEnergyTransceiver extends TileEntityMachineBase imp
 
 	@Override
 	public void updateEntity() {
-		if(!worldObj.isRemote) {
-			int mode = this.getRelevantMode(false);
 
-			long prevPower = this.power;
+	}
 
-			power = Library.chargeItemsFromTE(slots, 1, power, getMaxPower());
-
-			// In buffer mode, becomes a cable block and provides power to itself
-			// otherwise, acts like a regular power providing/accepting machine
-			if(mode == mode_buffer) {
-				if(UniNodespace.isUnstable(this.node)) {
-					this.node = (Nodespace.PowerNode) UniNodespace.getOrCreateNode(worldObj, xCoord, yCoord, zCoord, Nodespace.THE_POWER_PROVIDER,this::createNode);
+	/**
+	 * Called by {@link PocketDimension#tick()}
+	 */
+	@SuppressWarnings("all")
+	public void distributePower() {
+		if(!isReceiving){
+			long power = linkedPocketDimension.getPowerLong();
+			long powerRemaining = Library.chargeItemsFromTE(slots,1,power,getMaxPower());
+			// This is necessary because the pocket dimension stores energy in big int form.
+			linkedPocketDimension.removeEnergy(power-powerRemaining);
+		}
+		for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+			tryProvide(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, dir);
+			Nodespace.PowerNode dirNode = (Nodespace.PowerNode) UniNodespace.getNode(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, Nodespace.THE_POWER_PROVIDER);
+			if(isReceiving){
+				if (dirNode != null && dirNode.hasValidNet()) {
+					dirNode.net.addReceiver(this);
 				}
-
-				this.tryProvide(worldObj, xCoord, yCoord, zCoord, ForgeDirection.UNKNOWN);
-				if(node != null && node.hasValidNet()) node.net.addReceiver(this);
+				if (dirNode != null && dirNode.hasValidNet()){
+					dirNode.net.removeReceiver(this);
+				}
 			} else {
-				if(this.node != null) {
-					UniNodespace.destroyNode(worldObj, xCoord, yCoord, zCoord, Nodespace.THE_POWER_PROVIDER);
-					this.node = null;
-				}
-
-				for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
-					Nodespace.PowerNode dirNode = (Nodespace.PowerNode) UniNodespace.getNode(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, Nodespace.THE_POWER_PROVIDER);
-
-					if(mode == mode_output) {
-						tryProvide(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, dir);
-					} else {
-						if(dirNode != null && dirNode.hasValidNet()) dirNode.net.removeProvider(this);
-					}
-
-					if(mode == mode_input) {
-						if(dirNode != null && dirNode.hasValidNet()) dirNode.net.addReceiver(this);
-					} else {
-						if(dirNode != null && dirNode.hasValidNet()) dirNode.net.removeReceiver(this);
-					}
+				tryProvide(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, dir);
+				if (dirNode != null && dirNode.hasValidNet()){
+					dirNode.net.removeProvider(this);
 				}
 			}
+		}
+		if(isReceiving){
+			linkedPocketDimension.insertEnergy(Library.chargeTEFromItems(slots,0,0,getMaxPower()));
+		}
+		this.networkPackNT(20);
+	}
 
-			byte comp = this.getComparatorPower();
-			if(comp != this.lastRedstone)
-				this.markDirty();
-			this.lastRedstone = comp;
+	@Override
+	public boolean hasPermission(EntityPlayer player) {
+		return isUseableByPlayer(player);
+	}
 
-			power = Library.chargeTEFromItems(slots, 0, power, getMaxPower());
-
-			long avg = (power + prevPower) / 2;
-			this.delta = avg - this.log[0];
-
-			for(int i = 1; i < this.log.length; i++) {
-				this.log[i - 1] = this.log[i];
-			}
-
-			this.log[19] = avg;
-
-			prevPowerState = power;
-
-			this.networkPackNT(20);
+	@Override
+	public void receiveControl(NBTTagCompound data) {
+		if(data.hasKey("mode")){
+			isReceiving = !isReceiving;
+		}
+		if(data.hasKey("priority")){
+			ConnectionPriority[] vals = ConnectionPriority.values();
+			priority = vals[(priority.ordinal()+1)%vals.length];
 		}
 	}
 }

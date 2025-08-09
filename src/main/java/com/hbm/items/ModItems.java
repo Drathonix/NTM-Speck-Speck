@@ -2474,8 +2474,7 @@ public class ModItems {
 	public static Item gsa_hot_dog_cooked;
 	public static Item gsa_hot_dog_bunned;
 
-
-
+	
 
 
 

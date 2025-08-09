@@ -46,6 +46,7 @@ import com.hbm.tileentity.machine.albion.*;
 import com.hbm.tileentity.machine.oil.*;
 import com.hbm.tileentity.machine.pile.*;
 import com.hbm.tileentity.machine.rbmk.*;
+import com.hbm.tileentity.machine.ripper.TileEntitySREnergyTransceiver;
 import com.hbm.tileentity.machine.ripper.TileEntitySpaceRipper;
 import com.hbm.tileentity.machine.storage.*;
 import com.hbm.tileentity.network.*;
@@ -427,6 +428,7 @@ public class TileMappings {
 
 	private static void putSpaceRipper(){
 		put(TileEntitySpaceRipper.class,"tileentity_space_ripper");
+		put(TileEntitySREnergyTransceiver.class,"tileentity_sr_energy_transceiver");
 	}
 
 	private static void putRBMK() {
