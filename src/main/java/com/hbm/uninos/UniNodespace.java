@@ -34,6 +34,7 @@ public class UniNodespace {
 			node = factory.get();
 			createNode(world, node);
 		}
+		return node;
 	}
 
 	public static GenNode getNode(World world, int x, int y, int z, INetworkProvider type) {

@@ -1,5 +1,6 @@
 package com.hbm.calc;
 
+import net.minecraft.block.Block;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -23,10 +24,6 @@ public class Location extends EasyLocation {
 		return add(dir.offsetX, dir.offsetY, dir.offsetZ);
 	}
 
-	public TileEntity getTileEntity() {
-		return world.getTileEntity((int)x, (int)y, (int)z);
-	}
-
 	@Override
 	public boolean equals(Object object) {
 		if (this == object) return true;
@@ -39,5 +36,25 @@ public class Location extends EasyLocation {
 	@Override
 	public int hashCode() {
 		return Objects.hash(super.hashCode(), world);
+	}
+
+	public int getBlockMetadata() {
+		return world.getBlockMetadata((int)x,(int)y,(int)z);
+	}
+
+	public <T extends TileEntity> T getTileEntity() {
+		return (T)world.getTileEntity((int)x, (int)y, (int)z);
+	}
+
+	public Location multiply(int i) {
+		return new Location(world,x*i,y*i,z*i);
+	}
+
+	public Block getBlock() {
+		return world.getBlock((int)x,(int)y,(int)z);
+	}
+
+	public boolean isAir() {
+		return getBlock().isAir(world,(int)x,(int)y,(int)z);
 	}
 }

@@ -26,7 +26,7 @@ public class RenderSpaceRipper extends TileEntitySpecialRenderer implements IIte
 
 	@Override
 	public void renderTileEntityAt(TileEntity te, double x, double y, double z, float interp) {
-		TileEntitySpaceRipper caster = (TileEntitySpaceRipper) te;
+		TileEntitySpaceRipper ripper = (TileEntitySpaceRipper) te;
 
 		if(buf == null){
 			buf = GLAllocation.createDirectByteBuffer(8*4).asDoubleBuffer();
@@ -40,8 +40,8 @@ public class RenderSpaceRipper extends TileEntitySpecialRenderer implements IIte
 		case 5: GL11.glRotatef(270, 0F, 1F, 0F); break;
 		case 2: GL11.glRotatef(0, 0F, 1F, 0F); break;
 		}
-		GL11.glTranslated(  0.5, 0, 0.5);
-		GL11.glRotated(180, 0, 1, 0);
+		//GL11.glTranslated(  0.5, 0, 0.5);
+		//GL11.glRotated(180, 0, 1, 0);
 
 		GL11.glEnable(GL11.GL_LIGHTING);
 		GL11.glDisable(GL11.GL_CULL_FACE);

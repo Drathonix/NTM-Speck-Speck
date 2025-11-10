@@ -2474,10 +2474,6 @@ public class ModItems {
 	public static Item gsa_hot_dog_cooked;
 	public static Item gsa_hot_dog_bunned;
 
-	
-
-
-
 	public static void initializeItem()
 	{
 		meleeMod = ServerConfig.Sk_meleeDamageModifier.get();
@@ -5461,6 +5457,7 @@ public class ModItems {
 		gsa_hot_dog_raw = new ItemNuclearHotDog(2,true,false).setUnlocalizedName("gsa_hot_dog_raw").setCreativeTab(MainRegistry.partsTab).setTextureName(RefStrings.MODID + ":gsa_hot_dog_raw");
 		gsa_hot_dog_cooked = new ItemNuclearHotDog(4,false,false).setUnlocalizedName("gsa_hot_dog_cooked").setCreativeTab(MainRegistry.partsTab).setTextureName(RefStrings.MODID + ":gsa_hot_dog_cooked");
 		gsa_hot_dog_bunned = new ItemNuclearHotDog(6,false,true).setUnlocalizedName("gsa_hot_dog_bunned").setCreativeTab(MainRegistry.partsTab).setTextureName(RefStrings.MODID + ":gsa_hot_dog_bunned");
+		ItemSRCrystal.init();
 	}
 
 	private static void registerItem() {
@@ -7858,6 +7855,8 @@ public class ModItems {
 		GameRegistry.registerItem(tungsten_hammer,tungsten_hammer.getUnlocalizedName());
 		GameRegistry.registerItem(calcium_carbide, calcium_carbide.getUnlocalizedName());
 		GameRegistry.registerItem(comp,comp.getUnlocalizedName());
+
+		ItemSRCrystal.register();
 	}
 
 	public static void addRemap(String unloc, Item item, Enum sub) {
