@@ -6257,6 +6257,7 @@ tile.machine_combustion_engine.name=Industrial Combustion Engine
 tile.machine_compressor.name=Compressor
 tile.machine_compressor_compact.name=Compact Compressor
 tile.machine_condenser.name=Steam Condenser
+tile.machine_heat_exchanger.name=Heat Exchanger
 tile.machine_condenser_powered.name=High-Power Steam Condenser
 tile.machine_controller.name=Reactor Remote Control Block
 tile.machine_converter_he_rf.name=HE to RF Converter

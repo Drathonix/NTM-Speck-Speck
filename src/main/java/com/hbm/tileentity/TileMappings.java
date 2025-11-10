@@ -345,6 +345,7 @@ public class TileMappings {
 		put(TileEntityMachineAutosaw.class, "tileentity_autosaw");
 
 		put(TileEntityCondenser.class, "tileentity_condenser");
+		put(TileEntityHeatExchanger.class,"tileentity_heatexchanger");
 		put(TileEntityTowerSmall.class, "tileentity_cooling_tower_small");
 		put(TileEntityTowerLarge.class, "tileentity_cooling_tower_large");
 		put(TileEntityCondenserPowered.class, "tileentity_condenser_powered");
