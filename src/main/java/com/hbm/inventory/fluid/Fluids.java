@@ -868,17 +868,17 @@ public class Fluids {
 		REDMUD.addTraits(new FT_Toxin().addEntry(new ToxinEffects(HazardClass.GAS_BLISTERING, false).add(new PotionEffect(Potion.wither.id, 30 * 20, 2))));
 
 		double eff_steam_boil = 1.0D;
-		double eff_steam_heatex = 0.95D;
+		double eff_steam_boil_heatex = 1.05D;
 
-		WATER.addTraits(new FT_Heatable().setEff(HeatingType.BOILER, eff_steam_boil).setEff(HeatingType.HEATEXCHANGER, eff_steam_heatex)
+		WATER.addTraits(new FT_Heatable().setEff(HeatingType.BOILER, eff_steam_boil).setEff(HeatingType.HEATEXCHANGER, eff_steam_boil_heatex)
 				.addStep(200, 1, STEAM, 100)
 				.addStep(220, 1, HOTSTEAM, 10)
 				.addStep(238, 1, SUPERHOTSTEAM, 1)
 				.addStep(2500, 10, ULTRAHOTSTEAM, 1));
 
-		STEAM.addTraits(new FT_Heatable().setEff(HeatingType.BOILER, eff_steam_boil).setEff(HeatingType.HEATEXCHANGER, eff_steam_heatex).addStep(2, 10, HOTSTEAM, 1));
-		HOTSTEAM.addTraits(new FT_Heatable().setEff(HeatingType.BOILER, eff_steam_boil).setEff(HeatingType.HEATEXCHANGER, eff_steam_heatex).addStep(18, 10, SUPERHOTSTEAM, 1));
-		SUPERHOTSTEAM.addTraits(new FT_Heatable().setEff(HeatingType.BOILER, eff_steam_boil).setEff(HeatingType.HEATEXCHANGER, eff_steam_heatex).addStep(120, 10, ULTRAHOTSTEAM, 1));
+		STEAM.addTraits(new FT_Heatable().setEff(HeatingType.BOILER, eff_steam_boil).setEff(HeatingType.HEATEXCHANGER, eff_steam_boil_heatex).addStep(2, 10, HOTSTEAM, 1));
+		HOTSTEAM.addTraits(new FT_Heatable().setEff(HeatingType.BOILER, eff_steam_boil).setEff(HeatingType.HEATEXCHANGER, eff_steam_boil_heatex).addStep(18, 10, SUPERHOTSTEAM, 1));
+		SUPERHOTSTEAM.addTraits(new FT_Heatable().setEff(HeatingType.BOILER, eff_steam_boil).setEff(HeatingType.HEATEXCHANGER, eff_steam_boil_heatex).addStep(120, 10, ULTRAHOTSTEAM, 1));
 
 		double eff_steam_turbine = 1.0D;
 		double eff_steam_cool = 0.95D;

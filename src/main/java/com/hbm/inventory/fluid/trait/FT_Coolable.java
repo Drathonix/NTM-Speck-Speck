@@ -42,7 +42,7 @@ public class FT_Coolable extends FluidTrait {
 
 	public double getHeatOutputMultiplier(CoolingType type) {
 		Double eff = this.efficiency.get(type);
-		return eff != null ? 1+eff : 1D;
+		return eff != null ? eff : 1D;
 	}
 
 	@Override
@@ -91,5 +91,16 @@ public class FT_Coolable extends FluidTrait {
 		for(CoolingType type : CoolingType.values()) {
 			if(obj.has(type.name())) efficiency.put(type, obj.get(type.name()).getAsDouble());
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "FT_Coolable{" +
+			"efficiency=" + efficiency +
+			", coolsTo=" + coolsTo +
+			", amountReq=" + amountReq +
+			", amountProduced=" + amountProduced +
+			", heatEnergy=" + heatEnergy +
+			'}';
 	}
 }

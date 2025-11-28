@@ -55,8 +55,8 @@ public class MachineHeatExchanger extends BlockContainer implements ILookOverlay
 
 		List<String> text = new ArrayList<String>();
 
-		text.add("Cold Tank: " + hex.tanks[1].getTankType() + ": " + hex.tanks[1].getFill() + "mb/" + hex.tanks[1].getMaxFill() + "mb");
-		text.add("Hot Tank: " + hex.tanks[0].getTankType() + ": " + hex.tanks[0].getFill() + "mb/" + hex.tanks[0].getMaxFill() + "mb");
+		text.add("Cold Tank: " + I18nUtil.resolveKey(hex.tanks[1].getTankType().getConditionalName()) + ": " + hex.tanks[1].getFill() + "mB/" + hex.tanks[1].getMaxFill() + "mB");
+		text.add("Hot Tank: " + I18nUtil.resolveKey(hex.tanks[0].getTankType().getConditionalName()) + ": " + hex.tanks[0].getFill() + "mB/" + hex.tanks[0].getMaxFill() + "mB");
 		text.add("Exchanger Heat: " + hex.heatEnergy + "TU");
 
 		ILookOverlay.printGeneric(event, I18nUtil.resolveKey(getUnlocalizedName() + ".name"), 0xffff00, 0x404000, text);
@@ -89,14 +89,17 @@ public class MachineHeatExchanger extends BlockContainer implements ILookOverlay
 
 			TileEntityHeatExchanger hex = (TileEntityHeatExchanger) te;
 
-			FluidType type = ((IItemFluidIdentifier) player.getHeldItem().getItem()).getType(world, x, y, z, player.getHeldItem());
-			if(type.hasTrait(FT_Heatable.class)) {
-				FluidType hotType = type.getTrait(FT_Heatable.class).getFirstStep().typeProduced;
+			FluidType hotType = ((IItemFluidIdentifier) player.getHeldItem().getItem()).getType(world, x, y, z, player.getHeldItem());
+			if(hotType.hasTrait(FT_Coolable.class)) {
+				FluidType coldType = hotType.getTrait(FT_Coolable.class).coolsTo;
+				if(!coldType.hasTrait(FT_Heatable.class) || coldType.getTrait(FT_Heatable.class).getFirstStep().typeProduced != hotType) {
+					return false;
+				}
 				hex.step=0;
 				hex.tanks[0].setTankType(hotType);
-				hex.tanks[1].setTankType(type);
+				hex.tanks[1].setTankType(coldType);
 				hex.recalculateConsts();
-				player.addChatComponentMessage(new ChatComponentText("Changed cold tank type to ").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)).appendSibling(new ChatComponentTranslation(type.getConditionalName())).appendSibling(new ChatComponentText("!")));
+				player.addChatComponentMessage(new ChatComponentText("Changed cold tank type to ").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)).appendSibling(new ChatComponentTranslation(hotType.getConditionalName())).appendSibling(new ChatComponentText("!")));
 				player.addChatComponentMessage(new ChatComponentText("Changed hot tank type to ").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)).appendSibling(new ChatComponentTranslation(hotType.getConditionalName())).appendSibling(new ChatComponentText("!")));
 				hex.markChanged();
 			}

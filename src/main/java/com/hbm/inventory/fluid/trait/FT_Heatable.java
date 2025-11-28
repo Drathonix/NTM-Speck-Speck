@@ -38,7 +38,7 @@ public class FT_Heatable extends FluidTrait {
 
 	public double getHeatConsumptionMultiplier(HeatingType type) {
 		Double eff = this.efficiency.get(type);
-		return eff != null ? 1+eff : 1D;
+		return eff != null ? eff : 1D;
 	}
 
 	public HeatingStep getFirstStep() {
@@ -77,6 +77,16 @@ public class FT_Heatable extends FluidTrait {
 			this.heatReq = heat;
 			this.typeProduced = type;
 			this.amountProduced = prod;
+		}
+
+		@Override
+		public String toString() {
+			return "HeatingStep{" +
+				"amountReq=" + amountReq +
+				", heatReq=" + heatReq +
+				", typeProduced=" + typeProduced +
+				", amountProduced=" + amountProduced +
+				'}';
 		}
 	}
 
@@ -133,5 +143,13 @@ public class FT_Heatable extends FluidTrait {
 		for(HeatingType type : HeatingType.values()) {
 			if(obj.has(type.name())) efficiency.put(type, obj.get(type.name()).getAsDouble());
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "FT_Heatable{" +
+			"steps=" + steps +
+			", efficiency=" + efficiency +
+			'}';
 	}
 }
