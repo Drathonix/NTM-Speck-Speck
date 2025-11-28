@@ -15,7 +15,7 @@ import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.util.fauxpointtwelve.DirPos;
 
 import api.hbm.fluid.IFluidStandardTransceiver;
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -28,7 +28,7 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityHeaterHeatex extends TileEntityMachineBase implements IHeatSource, IFluidStandardTransceiver, IGUIProvider, IControlReceiver, IFluidCopiable {
+public class TileEntityHeaterHeatex extends TileEntityMachineBase implements IHeatable, IFluidStandardTransceiver, IGUIProvider, IControlReceiver, IFluidCopiable {
 
 	public FluidTank[] tanks;
 	public int amountToCool = 24_000;
@@ -175,8 +175,8 @@ public class TileEntityHeaterHeatex extends TileEntityMachineBase implements IHe
 	}
 
 	@Override
-	public void useUpHeat(int heat) {
-		this.heatEnergy = Math.max(0, this.heatEnergy - heat);
+	public void setHeat(int heat) {
+		this.heatEnergy = heat;
 	}
 
 	@Override

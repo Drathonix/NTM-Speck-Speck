@@ -4,14 +4,14 @@ import com.hbm.blocks.BlockDummyable;
 import com.hbm.tileentity.IDysonConverter;
 import com.hbm.tileentity.TileEntityMachineBase;
 
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityDysonConverterTU extends TileEntityMachineBase implements IDysonConverter, IHeatSource {
+public class TileEntityDysonConverterTU extends TileEntityMachineBase implements IDysonConverter, IHeatable {
 
 	public int heatEnergy;
 
@@ -57,8 +57,8 @@ public class TileEntityDysonConverterTU extends TileEntityMachineBase implements
 	}
 
 	@Override
-	public void useUpHeat(int heat) {
-		heatEnergy = Math.max(0, heatEnergy - heat);
+	public void setHeat(int heatEnergy) {
+		this.heatEnergy = heatEnergy;
 	}
 
 	@Override

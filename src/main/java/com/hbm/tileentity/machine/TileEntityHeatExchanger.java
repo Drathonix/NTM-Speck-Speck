@@ -1,10 +1,8 @@
 package com.hbm.tileentity.machine;
 
-import api.hbm.block.IToolable;
-import api.hbm.fluid.IFluidStandardTransceiver;
 import api.hbm.fluidmk2.FluidNode;
 import api.hbm.fluidmk2.IFluidStandardTransceiverMK2;
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import com.hbm.blocks.BlockDummyable;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
@@ -16,6 +14,7 @@ import com.hbm.lib.Library;
 import com.hbm.tileentity.IFluidCopiable;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.uninos.UniNodespace;
+import com.hbm.util.fauxpointtwelve.BlockPos;
 import com.hbm.util.fauxpointtwelve.DirPos;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -27,7 +26,9 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * Based off of {@link TileEntityHeaterHeatex}
@@ -35,13 +36,16 @@ import javax.annotation.Nullable;
  * This block will transfer heat to any adjacent blocks, including other heat exchangers which may cause state changes in their fluids.
  * @author Jack Andersen
  */
-public class TileEntityHeatExchanger extends TileEntityMachineBase implements IHeatSource, IFluidStandardTransceiverMK2, IFluidCopiable {
+public class TileEntityHeatExchanger extends TileEntityMachineBase implements IHeatable, IFluidStandardTransceiverMK2, IFluidCopiable {
+	public static final float radiativity = 0.0002F;
+	public static final float diffusion = 0.85F;
+	public static int baseTankSize = 8000;
 	// Tank 0 is the hot result, Tank 1 is the cold result.
 	public FluidTank[] tanks = new FluidTank[]{
-		new FluidTank(Fluids.STEAM, 8_000),
-		new FluidTank(Fluids.WATER, 8_000)
+		new FluidTank(Fluids.STEAM, baseTankSize),
+		new FluidTank(Fluids.WATER, baseTankSize)
 	};
-	protected FluidNode node;
+	protected FluidNode[] nodes = new FluidNode[2];
 
 	public FluidTank getHotTank(){
 		return tanks[0];
@@ -53,14 +57,45 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 	public int tickDelay = 1;
 	public int heatEnergy=0;
 	public int step = 0;
-	protected HeatExchangingRates rates = new HeatExchangingRates();
+	protected HeatExchangingRates rates;
 
 	public TileEntityHeatExchanger() {
 		super(1);
+		recalculateConsts();
 	}
 
 	public void recalculateConsts(){
 		rates = new HeatExchangingRates();
+		if(rates.isSet()) {
+			for (int i = 0; i < tanks.length; i++) {
+				FluidTank tank = tanks[i];
+				this.nodes[i] = (FluidNode) UniNodespace.getOrCreateNode(worldObj, xCoord, yCoord, zCoord, tank.getTankType().getNetworkProvider(),()->this.createNode(tank.getTankType()));
+			}
+			getHotTank().changeTankSize(rates.coolable.amountReq * baseTankSize);
+		}
+	}
+
+	protected FluidNode createNode(FluidType type) {
+		DirPos[] conPos = getConPos();
+
+		HashSet<BlockPos> posSet = new HashSet<>();
+		posSet.add(new BlockPos(this));
+		for(DirPos pos : conPos) {
+			ForgeDirection dir = pos.getDir();
+			posSet.add(new BlockPos(pos.getX() - dir.offsetX, pos.getY() - dir.offsetY, pos.getZ() - dir.offsetZ));
+		}
+
+		return new FluidNode(type.getNetworkProvider(), posSet.toArray(new BlockPos[posSet.size()])).setConnections(conPos);
+	}
+
+	@Override
+	public boolean canAbsorbFrom(int x, int y, int z) {
+		return true;
+	}
+
+	@Override
+	public boolean canDistributeTo(int x, int y, int z) {
+		return true;
 	}
 
 	@Override
@@ -79,6 +114,7 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 
 			this.tryConvert();
 			this.doTankBehavior();
+			this.doHeatDistribute();
 			networkPackNT(25);
 		}
 	}
@@ -99,6 +135,7 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 		tanks[1].deserialize(buf);
 		this.heatEnergy = buf.readInt();
 		this.tickDelay = buf.readInt();
+		recalculateConsts();
 	}
 
 	protected void updateConnections() {
@@ -156,8 +193,8 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 	}
 
 	@Override
-	public void useUpHeat(int heat) {
-		this.heatEnergy = Math.max(0, this.heatEnergy - heat);
+	public void setHeat(int heatEnergy) {
+		this.heatEnergy = heatEnergy;
 	}
 
 	@Override
@@ -233,22 +270,21 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 		}
 	}
 
+	public void doHeatDistribute(){
+		for (DirPos pos : getConPos()) {
+			balanceHeat(worldObj,diffusion,pos.getX(),pos.getY(),pos.getZ());
+		}
+		radiateAllSides(worldObj,radiativity,getConPos());
+	}
+
 	public void doTankBehavior() {
 		if(!worldObj.isRemote) {
-			if(this.node == null || this.node.expired || tank.getTankType() != lastType) {
-
-				this.node = (FluidNode) UniNodespace.getNode(worldObj, xCoord, yCoord, zCoord, tank.getTankType().getNetworkProvider());
-
-				if(this.node == null || this.node.expired || tank.getTankType() != lastType) {
-					this.node = this.createNode(tank.getTankType());
-					UniNodespace.createNode(worldObj, this.node);
-					lastType = tank.getTankType();
+			for (int i = 0; i < nodes.length; i++) {
+				FluidNode node = nodes[i];
+				if(node != null && node.hasValidNet()) {
+					node.net.addProvider(this);
+					node.net.addReceiver(this);
 				}
-			}
-
-			if(node != null && node.hasValidNet()) {
-				node.net.addProvider(this);
-				node.net.addReceiver(this);
 			}
 		}
 	}
@@ -258,9 +294,12 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 		super.invalidate();
 
 		if(!worldObj.isRemote) {
-			if(this.node != null) {
-				for (FluidTank tank : tanks) {
-					UniNodespace.destroyNode(worldObj, xCoord, yCoord, zCoord, tank.getTankType().getNetworkProvider());
+			for (int i = 0; i < nodes.length; i++) {
+				FluidNode node = nodes[i];
+				if (node != null) {
+					for (FluidTank tank : tanks) {
+						UniNodespace.destroyNode(worldObj, xCoord, yCoord, zCoord, tank.getTankType().getNetworkProvider());
+					}
 				}
 			}
 		}

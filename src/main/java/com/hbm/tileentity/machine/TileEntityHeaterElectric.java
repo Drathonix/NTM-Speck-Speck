@@ -9,7 +9,7 @@ import com.hbm.tileentity.TileEntityLoadedBase;
 import com.hbm.util.CompatEnergyControl;
 
 import api.hbm.energymk2.IEnergyReceiverMK2;
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import api.hbm.tile.IInfoProviderEC;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -21,8 +21,7 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityHeaterElectric extends TileEntityLoadedBase implements IHeatSource, IEnergyReceiverMK2, IBufPacketReceiver, ICopiable, IInfoProviderEC {
-
+public class TileEntityHeaterElectric extends TileEntityLoadedBase implements IHeatable, IEnergyReceiverMK2, IBufPacketReceiver, ICopiable, IInfoProviderEC {
 	public long power;
 	public int heatEnergy;
 	public boolean isOn;
@@ -42,14 +41,14 @@ public class TileEntityHeaterElectric extends TileEntityLoadedBase implements IH
 
 			this.heatEnergy *= 0.999;
 
-			this.tryPullHeat();
-
 			this.isOn = false;
 			if(setting > 0 && this.power >= this.getConsumption()) {
 				this.power -= this.getConsumption();
 				this.heatEnergy += getHeatGen();
 				this.isOn = true;
 			}
+
+			this.balanceHeat(worldObj,0.85F,xCoord,yCoord-1,zCoord);
 
 			networkPackNT(25);
 		} else {
@@ -136,13 +135,12 @@ public class TileEntityHeaterElectric extends TileEntityLoadedBase implements IH
 	}
 
 	protected void tryPullHeat() {
-		TileEntity con = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
+		absorbHeat(worldObj,0.85F,xCoord,yCoord,zCoord);
+	}
 
-		if(con instanceof IHeatSource) {
-			IHeatSource source = (IHeatSource) con;
-			this.heatEnergy += source.getHeatStored() * 0.85;
-			source.useUpHeat(source.getHeatStored());
-		}
+	@Override
+	public boolean canAbsorbFrom(int x, int y, int z) {
+		return this.yCoord < y;
 	}
 
 	public void toggleSetting() {
@@ -181,8 +179,8 @@ public class TileEntityHeaterElectric extends TileEntityLoadedBase implements IH
 	}
 
 	@Override
-	public void useUpHeat(int heat) {
-		this.heatEnergy = Math.max(0, this.heatEnergy - heat);
+	public void setHeat(int heat) {
+		this.heatEnergy=heat;
 	}
 
 	AxisAlignedBB bb = null;

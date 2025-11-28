@@ -4,17 +4,13 @@ import java.io.IOException;
 
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
-import com.hbm.dim.CelestialBody;
-import com.hbm.dim.trait.CBT_Atmosphere;
-import com.hbm.extprop.HbmLivingProps;
 import com.hbm.inventory.container.ContainerFirebox;
-import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.gui.GUIFirebox;
 import com.hbm.lib.RefStrings;
 import com.hbm.module.ModuleBurnTime;
 import com.hbm.tileentity.IConfigurableMachine;
 
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.player.EntityPlayer;
@@ -55,19 +51,19 @@ public class TileEntityHeaterOven extends TileEntityFireboxBase implements IConf
 
 	@Override
 	public void updateEntity() {
-		
+
 		if(!worldObj.isRemote) {
 			this.tryPullHeat();
 		}
-		
+
 		super.updateEntity();
 	}
-	
+
 	protected void tryPullHeat() {
 		TileEntity con = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
-		
-		if(con instanceof IHeatSource) {
-			IHeatSource source = (IHeatSource) con;
+
+		if(con instanceof IHeatable) {
+			IHeatable source = (IHeatable) con;
 			int toPull = Math.max(Math.min(source.getHeatStored(), this.getMaxHeat() - this.heatEnergy), 0);
 			this.heatEnergy += toPull * heatEff;
 			source.useUpHeat(toPull);
@@ -100,7 +96,7 @@ public class TileEntityHeaterOven extends TileEntityFireboxBase implements IConf
 	}
 
 	@SideOnly(Side.CLIENT) private ResourceLocation texture;
-	
+
 	@Override
 	@SideOnly(Side.CLIENT)
 	public Object provideGUI(int ID, EntityPlayer player, World world, int x, int y, int z) {

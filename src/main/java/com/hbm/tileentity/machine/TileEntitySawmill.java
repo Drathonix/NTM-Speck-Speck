@@ -15,7 +15,7 @@ import com.hbm.tileentity.machine.TileEntityMachineAutocrafter.InventoryCrafting
 import com.hbm.util.BufferUtil;
 import com.hbm.util.ItemStackUtil;
 
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -202,8 +202,8 @@ public class TileEntitySawmill extends TileEntityMachineBase {
 	protected void tryPullHeat() {
 		TileEntity con = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
 
-		if(con instanceof IHeatSource) {
-			IHeatSource source = (IHeatSource) con;
+		if(con instanceof IHeatable) {
+			IHeatable source = (IHeatable) con;
 			int heatSrc = (int) (source.getHeatStored() * diffusion);
 
 			if(heatSrc > 0) {

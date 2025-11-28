@@ -28,7 +28,7 @@ import com.hbm.util.BobMathUtil;
 import com.hbm.util.CrucibleUtil;
 
 import api.hbm.block.ICrucibleAcceptor;
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -46,7 +46,7 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityCrucible extends TileEntityMachineBase implements IGUIProvider, ICrucibleAcceptor, IConfigurableMachine, IMetalCopiable {
+public class TileEntityCrucible extends TileEntityMachineBase implements IGUIProvider, ICrucibleAcceptor, IConfigurableMachine, IMetalCopiable,IHeatable {
 
 	public int heat;
 	public int progress;
@@ -222,6 +222,9 @@ public class TileEntityCrucible extends TileEntityMachineBase implements IGUIPro
 			this.recipeStack.removeIf(o -> o.amount <= 0);
 			this.wasteStack.removeIf(x -> x.amount <= 0);
 
+			/* Radiative cooling */
+			this.heat = Math.max(this.heat - Math.max(this.heat / 1000, 1), 0);
+
 			/* sync */
 			this.networkPackNT(25);
 		}
@@ -315,32 +318,9 @@ public class TileEntityCrucible extends TileEntityMachineBase implements IGUIPro
 	}
 
 	protected void tryPullHeat() {
-
-		if(this.heat >= this.maxHeat) return;
-
-		TileEntity con = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
-
-		if(con instanceof IHeatSource) {
-			IHeatSource source = (IHeatSource) con;
-			int diff = source.getHeatStored() - this.heat;
-
-			if(diff == 0) {
-				return;
-			}
-			
-			diff = Math.min(diff, this.maxHeat - this.heat);
-
-			if(diff > 0) {
-				diff = (int) Math.ceil(diff * diffusion);
-				source.useUpHeat(diff);
-				this.heat += diff;
-				if(this.heat > this.maxHeat)
-					this.heat = this.maxHeat;
-				return;
-			}
-		}
-
-		this.heat = Math.max(this.heat - Math.max(this.heat / 1000, 1), 0);
+		if(this.heat >= maxHeat) return;
+		balanceHeat(worldObj,(float)diffusion,xCoord,yCoord-1,zCoord);
+		this.heat = Math.min(maxHeat,this.heat);
 	}
 
 	protected boolean trySmelt() {
@@ -634,4 +614,23 @@ public class TileEntityCrucible extends TileEntityMachineBase implements IGUIPro
 		return BobMathUtil.intCollectionToArray(types);
 	}
 
+	@Override
+	public boolean canDistributeTo(int x, int y, int z) {
+		return xCoord == x && yCoord == y+1 && zCoord == z;
+	}
+
+	@Override
+	public boolean canAbsorbFrom(int x, int y, int z) {
+		return canDistributeTo(x,y,z);
+	}
+
+	@Override
+	public int getHeatStored() {
+		return heat;
+	}
+
+	@Override
+	public void setHeat(int heat) {
+		this.heat=heat;
+	}
 }

@@ -3,7 +3,7 @@ package com.hbm.tileentity.machine;
 import java.util.ArrayList;
 import java.util.List;
 
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.blocks.machine.ReactorResearch;
 import com.hbm.config.CustomMachineConfigJSON;
@@ -300,8 +300,8 @@ public class TileEntityCustomMachine extends TileEntityMachinePolluting implemen
 	protected void tryPullHeat(int x, int y, int z) {
 		TileEntity con = worldObj.getTileEntity(x, y, z);
 
-		if(con instanceof IHeatSource) {
-			IHeatSource source = (IHeatSource) con;
+		if(con instanceof IHeatable) {
+			IHeatable source = (IHeatable) con;
 			int diff = source.getHeatStored() - this.heat;
 
 			if(diff == 0) {

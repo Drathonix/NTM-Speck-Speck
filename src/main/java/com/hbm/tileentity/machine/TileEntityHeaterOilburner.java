@@ -14,7 +14,7 @@ import com.hbm.tileentity.TileEntityMachinePolluting;
 import com.hbm.util.fauxpointtwelve.DirPos;
 
 import api.hbm.fluid.IFluidStandardTransceiver;
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -24,7 +24,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 
-public class TileEntityHeaterOilburner extends TileEntityMachinePolluting implements IGUIProvider, IFluidStandardTransceiver, IHeatSource, IControlReceiver, IFluidCopiable {
+public class TileEntityHeaterOilburner extends TileEntityMachinePolluting implements IGUIProvider, IFluidStandardTransceiver, IHeatable, IControlReceiver, IFluidCopiable {
 
 	public boolean isOn = false;
 	public FluidTank tank;
@@ -167,8 +167,8 @@ public class TileEntityHeaterOilburner extends TileEntityMachinePolluting implem
 	}
 
 	@Override
-	public void useUpHeat(int heat) {
-		this.heatEnergy = Math.max(0, this.heatEnergy - heat);
+	public void setHeat(int heat) {
+		this.heatEnergy=heat;
 	}
 
 	@Override

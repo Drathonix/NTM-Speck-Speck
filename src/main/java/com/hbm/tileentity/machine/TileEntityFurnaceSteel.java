@@ -11,7 +11,7 @@ import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.util.BufferUtil;
 import com.hbm.util.ItemStackUtil;
 
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -31,15 +31,15 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 	public int[] progress = new int[3];
 	public int[] bonus = new int[3];
 	public static final int processTime = 40_000; // assuming vanilla furnace rules with 200 ticks of coal fire burning at 200HU/t
-	
+
 	public int heat;
 	public static final int maxHeat = 100_000;
 	public static final double diffusion = 0.05D;
-	
+
 	private ItemStack[] lastItems = new ItemStack[3];
-	
+
 	public boolean wasOn = false;
-	
+
 	public TileEntityFurnaceSteel() {
 		super(6);
 	}
@@ -51,63 +51,63 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 
 	@Override
 	public void updateEntity() {
-		
+
 		if(!worldObj.isRemote) {
 			tryPullHeat();
-			
+
 			this.wasOn = false;
-			
+
 			int burn = (heat - this.maxHeat / 3) / 10;
-			
+
 			for(int i = 0; i < 3; i++) {
-				
+
 				if(slots[i] == null || lastItems[i] == null || !slots[i].isItemEqual(lastItems[i])) {
 					progress[i] = 0;
 					bonus[i] = 0;
 				}
-				
+
 				if(canSmelt(i)) {
 					progress[i] += burn;
 					this.heat -= burn;
 					this.wasOn = true;
 					if(worldObj.getTotalWorldTime() % 20 == 0) PollutionHandler.incrementPollution(worldObj, xCoord, yCoord, zCoord, PollutionType.SOOT, PollutionHandler.SOOT_PER_SECOND * 2);
 				}
-				
+
 				lastItems[i] = slots[i];
-				
+
 				if(progress[i] >= processTime) {
 					ItemStack result = FurnaceRecipes.smelting().getSmeltingResult(slots[i]);
-					
+
 					if(slots[i + 3] == null) {
 						slots[i + 3] = result.copy();
 					} else {
 						slots[i + 3].stackSize += result.stackSize;
 					}
-					
+
 					this.addBonus(slots[i], i);
-					
+
 					while(bonus[i] >= 100) {
 						slots[i + 3].stackSize =  Math.min(slots[i + 3].getMaxStackSize(), slots[i + 3].stackSize + result.stackSize);
 						bonus[i] -= 100;
 					}
-					
+
 					this.decrStackSize(i, 1);
-					
+
 					progress[i] = 0;
-					
+
 				}
 			}
 
 			this.networkPackNT(50);
 
 		} else {
-			
+
 			if(this.wasOn) {
 				ForgeDirection dir = ForgeDirection.getOrientation(this.getBlockMetadata() - 10);
 				ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
-				
+
 				worldObj.spawnParticle("smoke", xCoord + 0.5 - dir.offsetX * 1.125 - rot.offsetX * 0.75, yCoord + 2.625, zCoord + 0.5 - dir.offsetZ * 1.125 - rot.offsetZ * 0.75, 0.0, 0.05, 0.0);
-				
+
 				if(worldObj.rand.nextInt(20) == 0)
 					worldObj.spawnParticle("cloud", xCoord + 0.5 + dir.offsetX * 0.75, yCoord + 2, zCoord + 0.5 + dir.offsetZ * 0.75, 0.0, 0.05, 0.0);
 
@@ -135,7 +135,7 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 		this.heat = buf.readInt();
 		this.wasOn = buf.readBoolean();
 	}
-	
+
 	@Override
 	public void readFromNBT(NBTTagCompound nbt) {
 		super.readFromNBT(nbt);
@@ -143,7 +143,7 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 		this.progress = nbt.getIntArray("progress");
 		this.bonus = nbt.getIntArray("bonus");
 		this.heat = nbt.getInteger("heat");
-		
+
 		NBTTagList list = nbt.getTagList("lastItems", 10);
 		for(int i = 0; i < list.tagCount(); i++) {
 			NBTTagCompound nbt1 = list.getCompoundTagAt(i);
@@ -153,7 +153,7 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 			}
 		}
 	}
-	
+
 	@Override
 	public void writeToNBT(NBTTagCompound nbt) {
 		super.writeToNBT(nbt);
@@ -161,7 +161,7 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 		nbt.setIntArray("progress", progress);
 		nbt.setIntArray("bonus", bonus);
 		nbt.setInteger("heat", heat);
-		
+
 		NBTTagList list = new NBTTagList();
 		for(int i = 0; i < lastItems.length; i++) {
 			if(lastItems[i] != null) {
@@ -173,32 +173,32 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 		}
 		nbt.setTag("lastItems", list);
 	}
-	
+
 	protected void addBonus(ItemStack stack, int index) {
-		
+
 		List<String> names = ItemStackUtil.getOreDictNames(stack);
-		
+
 		for(String name : names) {
 			if(name.startsWith("ore")) { this.bonus[index] += 25; return; }
 			if(name.startsWith("log")) { this.bonus[index] += 50; return; }
 			if(name.equals("anyTar")) { this.bonus[index] += 50; return; }
 		}
 	}
-	
+
 	protected void tryPullHeat() {
-		
+
 		if(this.heat >= this.maxHeat) return;
-		
+
 		TileEntity con = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
-		
-		if(con instanceof IHeatSource) {
-			IHeatSource source = (IHeatSource) con;
+
+		if(con instanceof IHeatable) {
+			IHeatable source = (IHeatable) con;
 			int diff = source.getHeatStored() - this.heat;
-			
+
 			if(diff == 0) {
 				return;
 			}
-			
+
 			if(diff > 0) {
 				diff = (int) Math.ceil(diff * diffusion);
 				source.useUpHeat(diff);
@@ -208,26 +208,26 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 				return;
 			}
 		}
-		
+
 		this.heat = Math.max(this.heat - Math.max(this.heat / 1000, 1), 0);
 	}
-	
+
 	public boolean canSmelt(int index) {
-		
+
 		if(this.heat < this.maxHeat / 3) return false;
 		if(slots[index] == null) return false;
-		
+
 		ItemStack result = FurnaceRecipes.smelting().getSmeltingResult(slots[index]);
-		
+
 		if(result == null) return false;
 		if(slots[index + 3] == null) return true;
-		
+
 		if(!result.isItemEqual(slots[index + 3])) return false;
 		if(result.stackSize + slots[index + 3].stackSize > slots[index + 3].getMaxStackSize()) return false;
-		
+
 		return true;
 	}
-	
+
 	@Override
 	public int[] getAccessibleSlotsFromSide(int meta) {
 		return new int[] { 0, 1, 2, 3, 4, 5 };
@@ -235,10 +235,10 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 
 	@Override
 	public boolean isItemValidForSlot(int i, ItemStack itemStack) {
-		
+
 		if(i < 3)
 			return FurnaceRecipes.smelting().getSmeltingResult(itemStack) != null;
-		
+
 		return false;
 	}
 
@@ -257,12 +257,12 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 	public Object provideGUI(int ID, EntityPlayer player, World world, int x, int y, int z) {
 		return new GUIFurnaceSteel(player.inventory, this);
 	}
-	
+
 	AxisAlignedBB bb = null;
-	
+
 	@Override
 	public AxisAlignedBB getRenderBoundingBox() {
-		
+
 		if(bb == null) {
 			bb = AxisAlignedBB.getBoundingBox(
 					xCoord - 1,
@@ -273,10 +273,10 @@ public class TileEntityFurnaceSteel extends TileEntityMachineBase implements IGU
 					zCoord + 2
 					);
 		}
-		
+
 		return bb;
 	}
-	
+
 	@Override
 	@SideOnly(Side.CLIENT)
 	public double getMaxRenderDistanceSquared() {

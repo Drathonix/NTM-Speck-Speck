@@ -12,7 +12,7 @@ import api.hbm.fluidmk2.IFluidReceiverMK2;
 import api.hbm.redstoneoverradio.IRORInfo;
 import api.hbm.redstoneoverradio.IRORInteractive;
 import api.hbm.redstoneoverradio.IRORValueProvider;
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import com.hbm.inventory.material.Mats;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Optional;
@@ -31,7 +31,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 		@Optional.Interface(iface = "com.hbm.handler.CompatHandler.OCComponent", modid = "opencomputers"),
 		@Optional.Interface(iface = "li.cil.oc.api.network.SimpleComponent", modid = "opencomputers")
 })
-public class TileEntityProxyCombo extends TileEntityProxyBase implements IEnergyReceiverMK2, ISidedInventory, IFluidReceiverMK2, IHeatSource, ICrucibleAcceptor, SimpleComponent, OCComponent, IRORValueProvider, IRORInteractive {
+public class TileEntityProxyCombo extends TileEntityProxyBase implements IEnergyReceiverMK2, ISidedInventory, IFluidReceiverMK2, IHeatable, ICrucibleAcceptor, SimpleComponent, OCComponent, IRORValueProvider, IRORInteractive {
 
 	TileEntity tile;
 	boolean inventory;
@@ -426,21 +426,19 @@ public class TileEntityProxyCombo extends TileEntityProxyBase implements IEnergy
 		if(!this.heat)
 			return 0;
 
-		if(getTile() instanceof IHeatSource) {
-			return ((IHeatSource)getTile()).getHeatStored();
+		if(getTile() instanceof IHeatable) {
+			return ((IHeatable)getTile()).getHeatStored();
 		}
 
 		return 0;
 	}
 
 	@Override
-	public void useUpHeat(int heat) {
-
+	public void setHeat(int heat) {
 		if(!this.heat)
 			return;
-
-		if(getTile() instanceof IHeatSource) {
-			((IHeatSource)getTile()).useUpHeat(heat);
+		if(getTile() instanceof IHeatable) {
+			((IHeatable)getTile()).setHeat(heat);
 		}
 	}
 

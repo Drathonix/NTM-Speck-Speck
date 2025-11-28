@@ -25,7 +25,7 @@ import com.hbm.tileentity.TileEntityLoadedBase;
 import com.hbm.util.fauxpointtwelve.DirPos;
 
 import api.hbm.fluid.IFluidStandardTransceiver;
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -194,8 +194,8 @@ public class TileEntityHeatBoiler extends TileEntityLoadedBase implements IBufPa
 	protected void tryPullHeat() {
 		TileEntity con = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
 
-		if(con instanceof IHeatSource) {
-			IHeatSource source = (IHeatSource) con;
+		if(con instanceof IHeatable) {
+			IHeatable source = (IHeatable) con;
 			int diff = source.getHeatStored() - this.heat;
 
 			if(diff == 0) {

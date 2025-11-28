@@ -18,7 +18,7 @@ import com.hbm.util.Tuple.Triplet;
 import com.hbm.util.fauxpointtwelve.DirPos;
 
 import api.hbm.fluid.IFluidStandardTransceiver;
-import api.hbm.tile.IHeatSource;
+import api.hbm.tile.IHeatable;
 import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -203,8 +203,8 @@ public class TileEntityMachineCoker extends TileEntityMachineBase implements Sim
 
 		TileEntity con = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
 
-		if(con instanceof IHeatSource) {
-			IHeatSource source = (IHeatSource) con;
+		if(con instanceof IHeatable) {
+			IHeatable source = (IHeatable) con;
 			int diff = source.getHeatStored() - this.heat;
 
 			if(diff == 0) {
