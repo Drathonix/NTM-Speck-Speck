@@ -32,6 +32,13 @@ public class UniNodespace {
 		return null;
 	}
 
+	public static GenNode nodeCheck(World world, int x, int y, int z, INetworkProvider type, GenNode opt, Supplier<GenNode> node){
+		if(opt == null || opt.expired){
+			opt = getOrCreateNode(world,x,y,z,type,node);
+		}
+		return opt;
+	}
+
 	public static GenNode getOrCreateNode(World world, int x, int y, int z, INetworkProvider type, Supplier<GenNode> node){
 		GenNode opt = getNode(world, x, y, z, type);
 		if(opt == null || opt.expired) {

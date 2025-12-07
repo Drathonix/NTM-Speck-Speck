@@ -49,7 +49,7 @@ public interface IHeatable extends IInsulator {
 	default int useUpHeat(int heat) {
 		int heatEnergy = getHeatStored();
 		int cons = Math.min(heatEnergy,heat);
-		setHeat(heat-cons);
+		setHeat(heatEnergy-cons);
 		return cons;
 	}
 

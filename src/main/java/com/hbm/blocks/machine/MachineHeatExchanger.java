@@ -1,29 +1,25 @@
 package com.hbm.blocks.machine;
 
 import api.hbm.block.IToolable;
-import com.hbm.blocks.BlockDummyable;
+import com.hbm.blocks.IBlockMultiPass;
 import com.hbm.blocks.ILookOverlay;
-import com.hbm.dim.CelestialBody;
-import com.hbm.dim.trait.CBT_Atmosphere;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.trait.FT_Coolable;
-import com.hbm.inventory.fluid.trait.FT_Gaseous;
 import com.hbm.inventory.fluid.trait.FT_Heatable;
-import com.hbm.inventory.fluid.trait.FluidTraitSimple.FT_Gaseous_ART;
 import com.hbm.items.machine.IItemFluidIdentifier;
-import com.hbm.tileentity.TileEntityProxyCombo;
-import com.hbm.tileentity.machine.TileEntityDysonConverterAnatmogenesis;
+import com.hbm.lib.RefStrings;
+import com.hbm.render.block.RenderBlockMultipass;
 import com.hbm.tileentity.machine.TileEntityHeatExchanger;
-import com.hbm.util.AstronomyUtil;
 import com.hbm.util.i18n.I18nUtil;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.ChatStyle;
-import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.*;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.Pre;
 
@@ -34,7 +30,7 @@ import java.util.List;
  * Block for {@link com.hbm.tileentity.machine.TileEntityHeatExchanger}
  * @author Jack Andersen
  */
-public class MachineHeatExchanger extends BlockContainer implements ILookOverlay, IToolable {
+public class MachineHeatExchanger extends BlockContainer implements ILookOverlay, IBlockMultiPass, IToolable {
 
 	public MachineHeatExchanger(Material mat) {
 		super(mat);
@@ -99,7 +95,7 @@ public class MachineHeatExchanger extends BlockContainer implements ILookOverlay
 				hex.tanks[0].setTankType(hotType);
 				hex.tanks[1].setTankType(coldType);
 				hex.recalculateConsts();
-				player.addChatComponentMessage(new ChatComponentText("Changed cold tank type to ").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)).appendSibling(new ChatComponentTranslation(hotType.getConditionalName())).appendSibling(new ChatComponentText("!")));
+				player.addChatComponentMessage(new ChatComponentText("Changed cold tank type to ").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)).appendSibling(new ChatComponentTranslation(coldType.getConditionalName())).appendSibling(new ChatComponentText("!")));
 				player.addChatComponentMessage(new ChatComponentText("Changed hot tank type to ").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)).appendSibling(new ChatComponentTranslation(hotType.getConditionalName())).appendSibling(new ChatComponentText("!")));
 				hex.markChanged();
 			}
@@ -107,6 +103,56 @@ public class MachineHeatExchanger extends BlockContainer implements ILookOverlay
 		}
 
 		return false;
+	}
+
+	@SideOnly(Side.CLIENT) protected IIcon overlay;
+	@SideOnly(Side.CLIENT) protected IIcon overlayColor;
+	@SideOnly(Side.CLIENT) protected IIcon overlayHeat[];
+
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void registerBlockIcons(IIconRegister reg) {
+		this.blockIcon = reg.registerIcon(RefStrings.MODID + ":heat_exchanger");
+		this.overlayColor = reg.registerIcon(RefStrings.MODID + ":heat_exchanger_color");
+		this.overlayHeat[0] = reg.registerIcon(RefStrings.MODID + ":heat_exchanger_hot_overlay");
+	}
+
+	@Override
+	@SideOnly(Side.CLIENT)
+	public IIcon getIcon(IBlockAccess world, int x, int y, int z, int side) {
+		TileEntity tile = world.getTileEntity(x, y, z);
+		FluidType type = null;
+		if(tile instanceof TileEntityHeatExchanger hex) {
+			type = hex.getHotTank().getTankType();
+		}
+		return switch (RenderBlockMultipass.currentPass){
+			case 1 -> this.overlayHeat[0];
+			case 2 -> type == null ? this.blockIcon : this.overlayColor;
+			default -> this.blockIcon;
+		};
+	}
+
+	@Override
+	public int getRenderType(){
+		return IBlockMultiPass.getRenderType();
+	}
+
+	@Override
+	public int getPasses() {
+		return 3;
+	}
+
+	@Override
+	@SideOnly(Side.CLIENT)
+	public int colorMultiplier(IBlockAccess world, int x, int y, int z) {
+		if(RenderBlockMultipass.currentPass == 2){
+			TileEntity tile = world.getTileEntity(x, y, z);
+
+			if(tile instanceof TileEntityHeatExchanger hex) {
+				return hex.getColdTank().getTankType().getColor();
+			}
+		}
+		return 0xffffffff;
 	}
 }
 

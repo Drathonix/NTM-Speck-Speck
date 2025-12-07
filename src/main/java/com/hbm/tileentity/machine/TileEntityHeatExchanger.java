@@ -1,5 +1,6 @@
 package com.hbm.tileentity.machine;
 
+import api.hbm.energymk2.IEnergyReceiverMK2;
 import api.hbm.fluidmk2.FluidNode;
 import api.hbm.fluidmk2.IFluidStandardTransceiverMK2;
 import api.hbm.tile.IHeatable;
@@ -39,7 +40,7 @@ import java.util.List;
 public class TileEntityHeatExchanger extends TileEntityMachineBase implements IHeatable, IFluidStandardTransceiverMK2, IFluidCopiable {
 	public static final float radiativity = 0.0002F;
 	public static final float diffusion = 0.85F;
-	public static int baseTankSize = 8000;
+	public static int baseTankSize = 4000;
 	// Tank 0 is the hot result, Tank 1 is the cold result.
 	public FluidTank[] tanks = new FluidTank[]{
 		new FluidTank(Fluids.STEAM, baseTankSize),
@@ -68,9 +69,12 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 		rates = new HeatExchangingRates();
 		if(rates.isSet()) {
 			for (int i = 0; i < tanks.length; i++) {
+				nodes[i]=null;
+			}
+			/*for (int i = 0; i < tanks.length; i++) {
 				FluidTank tank = tanks[i];
 				this.nodes[i] = (FluidNode) UniNodespace.getOrCreateNode(worldObj, xCoord, yCoord, zCoord, tank.getTankType().getNetworkProvider(),()->this.createNode(tank.getTankType()));
-			}
+			}*/
 			getHotTank().changeTankSize(rates.coolable.amountReq * baseTankSize);
 		}
 	}
@@ -108,10 +112,6 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 	public void updateEntity() {
 
 		if(!worldObj.isRemote) {
-			this.updateConnections();
-
-			//this.heatEnergy *= 0.999;
-
 			this.tryConvert();
 			this.doTankBehavior();
 			this.doHeatDistribute();
@@ -138,15 +138,10 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 		recalculateConsts();
 	}
 
-	protected void updateConnections() {
-
-		for(DirPos pos : getConPos()) {
-			this.trySubscribe(tanks[0].getTankType(), worldObj, pos.getX(), pos.getY(), pos.getZ(), pos.getDir());
-		}
-	}
-
 	protected void tryConvert() {
-		if(!rates.isSet()) return;
+		if(!rates.isSet()){
+			return;
+		}
 		if(tickDelay < 1) tickDelay = 1;
 		if(worldObj.getTotalWorldTime() % tickDelay != 0) return;
 		rates.balance();
@@ -214,8 +209,7 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 
 	@Override
 	public boolean canConnect(FluidType type, ForgeDirection dir) {
-		ForgeDirection facing = ForgeDirection.getOrientation(this.getBlockMetadata() - BlockDummyable.offset);
-		return dir == facing || dir == facing.getOpposite();
+		return type == tanks[0].getTankType() || type == tanks[1].getTankType();
 	}
 
 	AxisAlignedBB bb = null;
@@ -264,7 +258,6 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 		if(rates.isSet()) {
 			step = (step+1)%rates.heatable.getStepCount();
 			tanks[0].setTankType(rates.step.typeProduced);
-			tanks[0].setFill(0);
 			recalculateConsts();
 			markChanged();
 		}
@@ -274,12 +267,14 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 		for (DirPos pos : getConPos()) {
 			balanceHeat(worldObj,diffusion,pos.getX(),pos.getY(),pos.getZ());
 		}
-		radiateAllSides(worldObj,radiativity,getConPos());
+		//radiateAllSides(worldObj,radiativity,getConPos());
 	}
 
 	public void doTankBehavior() {
 		if(!worldObj.isRemote) {
-			for (int i = 0; i < nodes.length; i++) {
+			for (int i = 0; i < tanks.length; i++) {
+				FluidTank tank = tanks[i];
+				this.nodes[i] = (FluidNode) UniNodespace.nodeCheck(worldObj, xCoord, yCoord, zCoord, tank.getTankType().getNetworkProvider(),this.nodes[i],()->this.createNode(tank.getTankType()));
 				FluidNode node = nodes[i];
 				if(node != null && node.hasValidNet()) {
 					node.net.addProvider(this);
@@ -297,9 +292,7 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 			for (int i = 0; i < nodes.length; i++) {
 				FluidNode node = nodes[i];
 				if (node != null) {
-					for (FluidTank tank : tanks) {
-						UniNodespace.destroyNode(worldObj, xCoord, yCoord, zCoord, tank.getTankType().getNetworkProvider());
-					}
+					UniNodespace.destroyNode(worldObj, xCoord, yCoord, zCoord, tanks[i].getTankType().getNetworkProvider());
 				}
 			}
 		}
@@ -327,7 +320,7 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 			// Amount of energy consumed per heating operation.
 			heatingEnergy = (int) (step.heatReq * heatable.getHeatConsumptionMultiplier(FT_Heatable.HeatingType.HEATEXCHANGER));
 			// Amount of energy produced per cooling operation.
-			coolingEnergy = (int) (coolable.heatEnergy * coolable.getHeatOutputMultiplier(CoolingType.HEATEXCHANGER));
+			coolingEnergy = (int) (coolable.heatEnergy* coolable.getHeatOutputMultiplier(CoolingType.HEATEXCHANGER));
 		}
 
 		public void balance(){

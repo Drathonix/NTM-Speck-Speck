@@ -66,6 +66,7 @@ public class HbmKeybinds {
 		ClientRegistry.registerKeyBinding(craneRightKey);
 		ClientRegistry.registerKeyBinding(craneLoadKey);
 		ClientRegistry.registerKeyBinding(abilityAlt);
+		ClientRegistry.registerKeyBinding(abilityCycle);
 		ClientRegistry.registerKeyBinding(copyToolAlt);
 		ClientRegistry.registerKeyBinding(copyToolCtrl);
 	}

@@ -1,5 +1,6 @@
 package com.hbm.blocks.network;
 
+import api.hbm.block.IInsulator;
 import api.hbm.block.IToolable;
 import com.hbm.blocks.IBlockMultiPass;
 import com.hbm.blocks.ILookOverlay;
@@ -27,7 +28,7 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent.Pre;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FluidDuctPaintable extends FluidDuctBase implements IToolable, IBlockMultiPass, ILookOverlay {
+public class FluidDuctPaintable extends FluidDuctBase implements IToolable, IBlockMultiPass, ILookOverlay, IInsulator {
 
 	@SideOnly(Side.CLIENT) protected IIcon overlay;
 	@SideOnly(Side.CLIENT) protected IIcon overlayColor;
@@ -163,6 +164,11 @@ public class FluidDuctPaintable extends FluidDuctBase implements IToolable, IBlo
 		List<String> text = new ArrayList();
 		text.add("&[" + duct.getType().getColor() + "&]" + duct.getType().getLocalizedName());
 		ILookOverlay.printGeneric(event, I18nUtil.resolveKey(getUnlocalizedName() + ".name"), 0xffff00, 0x404000, text);
+	}
+
+	@Override
+	public float radiativeCoolingLossPrevention() {
+		return 0.3F;
 	}
 
 	public static class TileEntityPipePaintable extends TileEntityPipeBaseNT implements ICopiable {

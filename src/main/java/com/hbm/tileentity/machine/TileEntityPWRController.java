@@ -430,11 +430,11 @@ public class TileEntityPWRController extends TileEntityMachineBase implements IG
 		return connectionsEff;
 	}
 
-	public double connectinFunc(double connections) {
+	public static double connectinFunc(double connections) {
 		return connections / 10D * (1D - getXOverE(connections, 300D)) + connections / 150D * getXOverE(connections, 300D);
 	}
 
-	public double getXOverE(double x, double d) {
+	public static double getXOverE(double x, double d) {
 		return 1 - Math.pow(Math.E, -x / d);
 	}
 
@@ -644,5 +644,172 @@ public class TileEntityPWRController extends TileEntityMachineBase implements IG
 	@Override
 	public String provideRORValue(String name) {
 		return "";
+	}
+
+	// PWR Optimizer
+	public static void main(String[] args){
+		EnumPWRFuel fuel = EnumPWRFuel.MEP;
+
+		// The coolant may modify flux calculations
+		float moderatorPower = 1.25F;
+		int maxCoolant = 128_000;
+		int coolantTU = 300;
+		double efficiency = 1.0;
+
+		int sources = 1;
+		int fluxBase = sources*20;
+		int size = 6*6*6;
+
+		// Blocks reserved for neutron sources, 1 heat exchanger, and 1 cooling channel.
+		int minChannels = 1;
+		int minExchangers = 1;
+		int reserves = sources+minChannels+minExchangers;
+
+
+		for (int rods = size-reserves; rods > 1; rods--) {
+			int spaceUsed = rods+sources;
+			for (int coolingChannels = size-spaceUsed-minExchangers; coolingChannels > 0; coolingChannels--) {
+				spaceUsed = rods+sources+coolingChannels;
+				for (int exchangers = size-spaceUsed; exchangers > 0; exchangers--) {
+					spaceUsed = rods+sources+coolingChannels+exchangers;
+					int heatSinks = size-spaceUsed;
+
+					int connections = 0;
+					int cbrt = (int)Math.cbrt(rods);
+					int rodsCubed = (int)Math.pow(cbrt,3);
+
+
+
+					double maxFlux = ramp(fuel,fluxBase,rods,moderatorPower,0);
+
+					double totalHeatOutput = maxFlux * fuel.heatEmission;
+					PWRBuild build = new PWRBuild(rods,coolingChannels,exchangers,sources,heatSinks,maxFlux,totalHeatOutput);
+					int state = build.meltsDown(efficiency,maxCoolant,coolantTU,1,1);
+					//System.out.println(state + ": " + build);
+					if(state > -1){
+						System.out.println("Generated PWR that produces " + state + "TU");
+						System.out.println(build);
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	public static int calcConnections(int rods){
+		// X
+		if(rods == 1) {
+			return 0;
+		}
+		// XX
+		if(rods == 2){
+			return 1;
+		}
+		// XX
+		// X
+		if(rods == 3){
+			return 2;
+		}
+		// XX
+		// XX
+		if(rods == 4){
+			return 4;
+		}
+		if(rods > 5 && rods < 8){
+			return calcConnections(rods-4) + 4 + (rods-4);
+		}
+		int len = (int)Math.cbrt(rods);
+		int cubed = (int)Math.pow(len,3);
+		int squareCons = len*(len-1)*2;
+		int cons = (int)((squareCons)+Math.pow(len,2))*(len-1);
+		int other = rods-cubed;
+		return cons + calcConnections(other);
+	}
+
+	private static class PWRBuild{
+		private final int rods;
+		private final int coolingChannels;
+		private final int exchangers;
+		private final int sources;
+		private final int sinks;
+		private final double maxFlux;
+		private final double heatPerTick;
+
+		private PWRBuild(int rods, int coolingChannels, int exchangers, int sources, int sinks, double maxFlux, double heatPerTick) {
+			this.rods = rods;
+			this.coolingChannels = coolingChannels;
+			this.exchangers = exchangers;
+			this.sources = sources;
+			this.sinks = sinks;
+			this.maxFlux = maxFlux;
+			this.heatPerTick = heatPerTick;
+		}
+
+		private double getHeatableBlocks(){
+			return sinks/4D + rods;
+		}
+
+		private int meltsDown(double coolingEfficiency, int tankSize, int tu, int aR, int aP){
+			long coreHeatCapacity = coreHeatCapacityBase + sinks * (coreHeatCapacityBase / 20);
+
+			long coreHeat = 0, hullHeat = 0;
+			coreHeat += (long) heatPerTick;
+
+			double coreCoolingApproachNum = getXOverE((double) exchangers * 5 / getHeatableBlocks(), 2) / 2D;
+			long averageCoreHeat = (coreHeat + hullHeat) / 2;
+			coreHeat -= (coreHeat - averageCoreHeat) * coreCoolingApproachNum;
+			hullHeat -= (hullHeat - averageCoreHeat) * coreCoolingApproachNum;
+
+			if(coreHeat >= coreHeatCapacity){
+				return -2;
+			}
+
+			double coolingEff = (double) coolingChannels / (double) getHeatableBlocks() * 0.1D; //10% cooling if numbers match
+			if(coolingEff > 1D) coolingEff = 1D;
+
+			//no use in trying to convert everythin to long since the internal tanks would never even support operation like that, just cap the heat cycle count to prevent overflows in the math
+			int heatToUse = (int) Math.min(Math.min(hullHeat, (long) (hullHeat * coolingEff * coolingEfficiency)), 2_000_000_000);
+			int coolCycles = tankSize / aR;
+			int hotCycles = tankSize / aP;
+			int heatCycles = heatToUse / tu;
+			int cycles = Math.min(coolCycles, Math.min(hotCycles, heatCycles));
+
+			hullHeat-=(long)tu*cycles;
+			if(hullHeat > 0){
+				return -1;
+			}
+			return tu*cycles;
+		}
+
+
+		@Override
+		public String toString() {
+			return "PWRBuild{" +
+				"size=" + (rods+coolingChannels+exchangers+sources+sinks) +
+				", rods=" + rods +
+				", coolingChannels=" + coolingChannels +
+				", exchangers=" + exchangers +
+				", sources=" + sources +
+				", sinks=" + sinks +
+				", maxFlux=" + maxFlux +
+				", heatPerTick=" + heatPerTick +
+				'}';
+		}
+	}
+
+	public static double ramp(EnumPWRFuel fuel, int base, int rods, double mod, double lastFlux){
+		double totalConnections = this.connections + this.connectionsControlled * (1D - (this.rodLevel / 100D));
+		double usedRods = connectinFunc(totalConnections);
+
+
+		double fluxPerRod = lastFlux / (double)rods;
+		double outputPerRod = fuel.function.effonix(fluxPerRod);
+		double totalOutput = (base + (outputPerRod * rods * usedRods))*mod;
+
+
+		if(totalOutput != lastFlux){
+			return ramp(fuel, base, rods, mod, totalOutput);
+		}
+		return totalOutput;
 	}
 }
