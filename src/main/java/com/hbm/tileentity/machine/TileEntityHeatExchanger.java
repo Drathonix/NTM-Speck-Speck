@@ -21,6 +21,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import net.minecraft.block.BlockRedstoneComparator;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.AxisAlignedBB;
@@ -267,7 +268,7 @@ public class TileEntityHeatExchanger extends TileEntityMachineBase implements IH
 		for (DirPos pos : getConPos()) {
 			balanceHeat(worldObj,diffusion,pos.getX(),pos.getY(),pos.getZ());
 		}
-		//radiateAllSides(worldObj,radiativity,getConPos());
+		radiateAllSides(worldObj,radiativity,getConPos());
 	}
 
 	public void doTankBehavior() {

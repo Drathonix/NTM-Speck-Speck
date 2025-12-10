@@ -14,6 +14,7 @@ import com.hbm.util.i18n.I18nUtil;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.block.BlockContainer;
+import net.minecraft.block.BlockGlowstone;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
@@ -105,16 +106,17 @@ public class MachineHeatExchanger extends BlockContainer implements ILookOverlay
 		return false;
 	}
 
-	@SideOnly(Side.CLIENT) protected IIcon overlay;
 	@SideOnly(Side.CLIENT) protected IIcon overlayColor;
-	@SideOnly(Side.CLIENT) protected IIcon overlayHeat[];
+	@SideOnly(Side.CLIENT) protected IIcon[] overlayHeat = new IIcon[10];
 
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void registerBlockIcons(IIconRegister reg) {
 		this.blockIcon = reg.registerIcon(RefStrings.MODID + ":heat_exchanger");
 		this.overlayColor = reg.registerIcon(RefStrings.MODID + ":heat_exchanger_color");
-		this.overlayHeat[0] = reg.registerIcon(RefStrings.MODID + ":heat_exchanger_hot_overlay");
+		for (int i = 0; i < overlayHeat.length; i++) {
+			this.overlayHeat[i] = reg.registerIcon(RefStrings.MODID + ":heat_exchanger_hot_" + i);
+		}
 	}
 
 	@Override
@@ -122,14 +124,21 @@ public class MachineHeatExchanger extends BlockContainer implements ILookOverlay
 	public IIcon getIcon(IBlockAccess world, int x, int y, int z, int side) {
 		TileEntity tile = world.getTileEntity(x, y, z);
 		FluidType type = null;
+		float heat = 0;
 		if(tile instanceof TileEntityHeatExchanger hex) {
 			type = hex.getHotTank().getTankType();
+			heat = hex.getHeatStored()/100000F;
+			heat = Math.min(heat,0.99F);
 		}
-		return switch (RenderBlockMultipass.currentPass){
-			case 1 -> this.overlayHeat[0];
-			case 2 -> type == null ? this.blockIcon : this.overlayColor;
-			default -> this.blockIcon;
-		};
+		IIcon icon = this.blockIcon;
+		if(heat > 0){
+			icon = overlayHeat[(int) (overlayHeat.length*heat)];
+		}
+		if(RenderBlockMultipass.currentPass == 0){
+			return icon;
+		} else {
+			return type == null ? icon : this.overlayColor;
+		}
 	}
 
 	@Override
@@ -139,13 +148,13 @@ public class MachineHeatExchanger extends BlockContainer implements ILookOverlay
 
 	@Override
 	public int getPasses() {
-		return 3;
+		return 2;
 	}
 
 	@Override
 	@SideOnly(Side.CLIENT)
 	public int colorMultiplier(IBlockAccess world, int x, int y, int z) {
-		if(RenderBlockMultipass.currentPass == 2){
+		if(RenderBlockMultipass.currentPass == 1){
 			TileEntity tile = world.getTileEntity(x, y, z);
 
 			if(tile instanceof TileEntityHeatExchanger hex) {

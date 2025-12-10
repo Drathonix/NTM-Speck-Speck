@@ -15,7 +15,7 @@ import java.util.Iterator;
  */
 public interface IHeatable extends IInsulator {
 	/**
-	 * Heatable blocks absorb heat so they also block loss due to radiative cooling.
+	 * Heatable blocks absorb heat, so they also block loss due to radiative cooling.
 	 * @return 1 to block heat loss.
 	 */
 	@Override
@@ -121,42 +121,20 @@ public interface IHeatable extends IInsulator {
 	 * @param sides the block positions to check for insulator.
 	 */
 	default void radiateAllSides(World world, float lossPercentage, DirPos... sides) {
+		if(sides.length == 0){
+			return;
+		}
 		float mod = 0;
-		int count = 0;
 		for (DirPos side : sides) {
 			if(world.getBlock(side.getX(),side.getY(),side.getZ()) instanceof IInsulator insulator){
-				mod+=insulator.radiativeCoolingLossPrevention();
-				count++;
-			} else if(world.getTileEntity(side.getX(),side.getY(),side.getZ()) instanceof IInsulator insulator){
-				mod+=insulator.radiativeCoolingLossPrevention();
-				count++;
+				mod += insulator.radiativeCoolingLossPrevention();
+			} else if(world.getTileEntity(side.getX(),side.getY(),side.getZ()) instanceof IInsulator insulator) {
+				mod += insulator.radiativeCoolingLossPrevention();
 			}
 		}
-		if(count > 1){
-			mod/=count;
-		}
+		mod/=sides.length;
 		mod = 1-mod;
-		float multiplier = lossPercentage*mod;
-		setHeat((int)(getHeatStored()*multiplier));
-	}
-
-	/**
-	 * Loses heat due to radiative cooling for one side.
-	 * @param world the world to locate insulator in.
-	 * @param sideLossPercentage the base percentage of total heat lost on this side only..
-	 * @param x side position.
-	 * @param y side position.
-	 * @param z side positions.
-	 */
-	default void radiate(World world, float sideLossPercentage, int x, int y, int z){
-		float mod = 0;
-		if(world.getBlock(x,y,z) instanceof IInsulator insulator){
-			mod=insulator.radiativeCoolingLossPrevention();
-		} else if(world.getTileEntity(x,y,z) instanceof IInsulator insulator){
-			mod=insulator.radiativeCoolingLossPrevention();
-		}
-		mod = 1-mod;
-		float multiplier = sideLossPercentage*mod;
+		float multiplier = 1-lossPercentage*mod;
 		setHeat((int)(getHeatStored()*multiplier));
 	}
 }
